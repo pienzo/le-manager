@@ -1,0 +1,40 @@
+services:
+  le-web:
+    build:
+      context: ./app
+    container_name: le-web
+    env_file: .env
+    volumes:
+      - acme_challenges:/var/www/acme-challenges
+      - letsencrypt:/etc/letsencrypt
+      - letsencrypt_lib:/var/lib/letsencrypt
+      - app_data:/data
+    restart: unless-stopped
+    networks:
+      - le-net
+
+  le-nginx:
+    image: nginx:stable-alpine
+    container_name: le-nginx
+    depends_on:
+      - le-web
+    ports:
+      # Porta 80 per le challenge HTTP-01 (Sophos WAF la raggiungerà)
+      - "80:80"
+      # opzionale: esporre la GUI via nginx come reverse proxy (vedi sotto)
+      - "8080:8080"
+    volumes:
+      - acme_challenges:/var/www/acme-challenges:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    networks:
+      - le-net
+
+volumes:
+  acme_challenges:
+  letsencrypt:
+  letsencrypt_lib:
+  app_data:
+
+networks:
+  le-net:
