@@ -1,0 +1,5 @@
+fastapi==0.115.6
+uvicorn[standard]==0.30.6
+jinja2==3.1.5
+python-multipart==0.0.9
+zipstream-ng==1.8.0

@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>LE Manager</title>
+  <style>
+    body{font-family:system-ui,Arial;margin:20px;max-width:1100px}
+    .box{border:1px solid #ddd;border-radius:10px;padding:14px;margin:12px 0}
+    input,select{padding:8px}
+    button{padding:8px 12px;cursor:pointer}
+    table{border-collapse:collapse;width:100%}
+    th,td{border-bottom:1px solid #eee;padding:8px;text-align:left}
+    .muted{color:#666}
+  </style>
+</head>
+<body>
+  <h1>LE Manager (MVP)</h1>
+  <p class="muted">HTTP-01 webroot: <code>/var/www/acme-challenges</code> — Nginx serve <code>/.well-known/acme-challenge/</code></p>
+
+  <div class="box">
+    <h2>1) Accounts</h2>
+    <form method="post" action="/accounts/create">
+      <input name="name" placeholder="Nome account (es. Prod-1)" required>
+      <input name="email" placeholder="Email (es. admin@dominio.tld)" required>
+      <select name="staging">
+        <option value="1">Staging (test)</option>
+        <option value="0">Production</option>
+      </select>
+      <button type="submit">Crea account</button>
+    </form>
+
+    <h3>Accounts esistenti</h3>
+    <table>
+      <tr><th>ID</th><th>Nome</th><th>Email</th><th>Env</th><th>Creato</th></tr>
+      {% for a in accounts %}
+      <tr>
+        <td>{{a["id"]}}</td>
+        <td>{{a["name"]}}</td>
+        <td>{{a["email"]}}</td>
+        <td>{{"staging" if a["staging"]==1 else "prod"}}</td>
+        <td class="muted">{{a["created_at"]}}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="box">
+    <h2>2) Richiedi certificato (HTTP-01)</h2>
+    <form method="post" action="/certs/issue_http">
+      <label>Account:</label>
+      <select name="account_id" required>
+        {% for a in accounts %}
+          <option value="{{a['id']}}">{{a["id"]}} - {{a["name"]}} ({{"staging" if a["staging"]==1 else "prod"}})</option>
+        {% endfor %}
+      </select>
+      <br><br>
+      <label>Domini (spazio o virgola):</label><br>
+      <input style="width:90%" name="domains" placeholder="example.com www.example.com" required>
+      <br><br>
+      <button type="submit">Emetti</button>
+    </form>
+    <p class="muted">Wildcard (*.dominio) non possibile con HTTP-01.</p>
+  </div>
+
+  <div class="box">
+    <h2>3) Certificati (riepilogo + export)</h2>
+    <button onclick="location.href='/certs/renew_all';" style="display:none;"></button>
+    <form method="post" action="/certs/renew_all">
+      <button type="submit">Renew all (certbot renew)</button>
+    </form>
+    <br>
+
+<table>
+  <tr><th>Nome</th><th>Scadenza</th><th>Giorni</th><th>Azioni / Export</th></tr>
+  {% for c in certs %}
+  <tr>
+    <td><code>{{c["name"]}}</code></td>
+
+    <td class="muted">{{c["expires"] or "?"}}</td>
+
+    <td>
+      {% if c["days_left"] is not none %}
+        {% if c["days_left"] <= 15 %}
+          <strong style="color:#b00020">{{c["days_left"]}}</strong>
+        {% elif c["days_left"] <= 30 %}
+          <strong style="color:#b36b00">{{c["days_left"]}}</strong>
+        {% else %}
+          {{c["days_left"]}}
+        {% endif %}
+      {% else %}
+        ?
+      {% endif %}
+    </td>
+
+    <td>
+      	<span class="muted">acc: {{c["account_id"]}}</span> |
+	<a href="/export/{{c['account_id']}}/{{c['name']}}/bundle.zip">bundle.zip</a> |
+	<a href="/export/{{c['account_id']}}/{{c['name']}}/combined.pem">combined.pem</a> |
+	<a href="/export/{{c['account_id']}}/{{c['name']}}/fullchain">fullchain</a> |
+	<a href="/export/{{c['account_id']}}/{{c['name']}}/privkey">privkey</a>
+      <form method="post" action="/certs/renew_one" style="display:inline;margin-left:10px">
+        <input type="hidden" name="name" value="{{c['name']}}">
+        <button type="submit">Renew</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+
+  </div>
+
+  <div class="box">
+    <h2>Jobs (ultimi 20)</h2>
+    <table>
+      <tr><th>ID</th><th>Tipo</th><th>Status</th><th>Domini</th><th>Quando</th><th>Dettagli</th></tr>
+      {% for j in jobs %}
+      <tr>
+        <td>{{j["id"]}}</td>
+        <td>{{j["kind"]}}</td>
+        <td>{{j["status"]}}</td>
+        <td class="muted">{{j["domains"] or ""}}</td>
+        <td class="muted">{{j["created_at"]}}</td>
+        <td><a href="/jobs/{{j['id']}}">log</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</body>
+</html>

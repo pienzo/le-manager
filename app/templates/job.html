@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Job {{job["id"]}}</title>
+  <style>
+    body{font-family:system-ui,Arial;margin:20px;max-width:1100px}
+    pre{background:#111;color:#eee;padding:12px;border-radius:10px;overflow:auto}
+    .muted{color:#666}
+  </style>
+</head>
+<body>
+  <p><a href="/">← indietro</a></p>
+  <h1>Job {{job["id"]}} — {{job["kind"]}} — {{job["status"]}}</h1>
+  <p class="muted">Creato: {{job["created_at"]}} | Finito: {{job["finished_at"] or "-"}}</p>
+  <p class="muted">Domains: {{job["domains"] or "-"}}</p>
+
+  <h2>STDOUT</h2>
+  <pre>{{job["stdout"] or ""}}</pre>
+
+  <h2>STDERR</h2>
+  <pre>{{job["stderr"] or ""}}</pre>
+</body>
+</html>
